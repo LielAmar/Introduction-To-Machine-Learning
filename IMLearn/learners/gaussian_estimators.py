@@ -219,7 +219,7 @@ class MultivariateGaussian:
 
         d = len(self.mu_)
         coefficient = 1 / np.sqrt(np.power(2 * np.pi, d)) * det(self.cov_)
-        exp_coefficient = (-1 / 2) * ((X - self.mu_).T @ inv(self.cov_) @ (X - self.mu_))
+        exp_coefficient = (-1 / 2) * ((X - self.mu_) @ inv(self.cov_) @ (X - self.mu_).T)
 
         return coefficient * np.exp(exp_coefficient)
 
@@ -250,9 +250,9 @@ class MultivariateGaussian:
         m = len(X)
         d = len(mu)
 
-        first_term = (-m / 2) * (np.log(det(cov)) + d * np.log(2 * np.pi))
+        first_term = (-m / 2) * (slogdet(cov)[1] + d * np.log(2 * np.pi))
         # (X - mu) is a Matrix of size 1000x4. Therefore, it's multiplication with inv(cov) (4x4 matrix) is
         # well-defined. We then want to multiply it by terms with (X - mu), resulting in the desired sum.
-        second_term = np.sum((X - mu) @ inv(cov) * (X - mu))
+        second_term = (-1 / 2) * np.sum((X - mu) @ inv(cov) * (X - mu))
 
         return first_term + second_term

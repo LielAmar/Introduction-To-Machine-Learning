@@ -53,14 +53,17 @@ def test_multivariate_gaussian():
     # Question 5 - Likelihood evaluation
     linspace = np.linspace(-10, 10, 200)
 
-    log_likelihood_values = [
+    log_likelihood_values = np.array([
         [MultivariateGaussian.log_likelihood(
             np.array([linspace[i], 0, linspace[j], 0]), cov, samples) for i in range(200)]
-        for j in range(200)]
+        for j in range(200)])
 
-    px.imshow(log_likelihood_values, x=linspace, y=linspace,
-              labels={"x": "f1", "y": "f3"},
-              title="F1/F3 Likelihood Heat-Map").show()
+    fig = px.imshow(log_likelihood_values.T, x=linspace, y=linspace,
+                    labels={"x": "f3", "y": "f1"},
+                    title="Normal Multivariate Distribution as a function of F3/F1, displayed in a Heat-Map")
+    # Reverses the y-axis
+    fig.update_yaxes(autorange=True)
+    fig.show()
 
     # Question 6 - Maximum likelihood
     max_value = np.max(log_likelihood_values)
