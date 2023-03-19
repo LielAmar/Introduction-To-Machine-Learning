@@ -50,18 +50,23 @@ def test_multivariate_gaussian():
     print(f'Estimated Expectation: {mult_gaus.mu_}')
     print(f'Estimated Covariance Matrix: {mult_gaus.cov_}')
 
-
     # Question 5 - Likelihood evaluation
-    f1 = np.linspace(-10, 10, 200)
-    f3 = np.linspace(-10, 10, 200)
+    linspace = np.linspace(-10, 10, 200)
 
-    for i in range(200):
-        mu = np.array([f1[i], 0, f3[i], 0])
+    log_likelihood_values = [
+        [MultivariateGaussian.log_likelihood(
+            np.array([linspace[i], 0, linspace[j], 0]), cov, samples) for i in range(200)]
+        for j in range(200)]
 
-        print(mult_gaus.log_likelihood(mu, cov, samples))
+    px.imshow(log_likelihood_values, x=linspace, y=linspace,
+              labels={"x": "f1", "y": "f3"},
+              title="F1/F3 Likelihood Heat-Map").show()
 
     # Question 6 - Maximum likelihood
-    # raise NotImplementedError()
+    max_value = np.max(log_likelihood_values)
+    max_indexes = np.where(log_likelihood_values == max_value)
+    print(f'The maximum value is attained at ({linspace[max_indexes[0]][0]}, {linspace[max_indexes[1]][0]}), \
+and gets the value {max_value}')
 
 
 if __name__ == '__main__':
