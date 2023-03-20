@@ -123,10 +123,10 @@ class UnivariateGaussian:
 
         # To calculate log-likelihood, we can calculate the likelihood and then extract its logarithm.
         # The normal distribution likelihood function is (Course book, page 15):
-        # (1 / (2 * pi * sigma^2)^(m/2)) * exp((-1/2 * sigma^2) * sum(xi - mu)^2)
+        # (1 / (2 * pi * sigma^2)^(m/2)) * exp((-1/2 * sigma) * sum(xi - mu)^2)
 
-        coefficient = 1 / np.power(2 * np.pi * np.power(sigma, 2), len(X) / 2)
-        exp_coefficient = -1 / (2 * np.power(sigma, 2))
+        coefficient = 1 / np.power(2 * np.pi * sigma, len(X) / 2)
+        exp_coefficient = -1 / (2 * sigma)
         exp_error_sum = np.sum(np.power(X - mu, 2))
 
         return np.log(coefficient * np.exp(exp_coefficient * exp_error_sum))
@@ -218,8 +218,8 @@ class MultivariateGaussian:
         # * Notice that X is a random vector, each entry is a vector of size D.
 
         d = len(self.mu_)
-        coefficient = 1 / np.sqrt(np.power(2 * np.pi, d)) * det(self.cov_)
-        exp_coefficient = (-1 / 2) * ((X - self.mu_) @ inv(self.cov_) @ (X - self.mu_).T)
+        coefficient = 1 / (np.sqrt(np.power(2 * np.pi, d)) * det(self.cov_))
+        exp_coefficient = (-1 / 2) * (np.sum((X - self.mu_) @ inv(self.cov_) * (X - self.mu_), axis=1))
 
         return coefficient * np.exp(exp_coefficient)
 

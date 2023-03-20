@@ -20,22 +20,19 @@ def test_univariate_gaussian():
     # Question 2 - Empirically showing sample mean is consistent
     estimations_error = [np.abs(uni_gaus.fit(samples[:sample_size]).mu_ - mu) for sample_size in range(10, 1001, 10)]
 
-    estimations_df = pd.DataFrame(np.array([np.arange(10, 1001, 10), np.array(estimations_error)]).transpose(),
-                                  columns=["smpl_size", "est_err"])
-
-    figure = px.line(estimations_df, x="smpl_size", y="est_err",
-                     labels={"smpl_size": "Sample Size", "est_err": "Estimation Error (Distance from real MU)"},
-                     title="Estimation Error as a function of Sample Size")
-    figure.show()
+    figure1 = px.line(x=range(10, 1001, 10), y=np.array(estimations_error),
+                      labels=dict(x="Sample Size", y="Estimation Error (Distance from real MU)"),
+                      title="Estimation Error as a function of Sample Size")
+    figure1.show()
 
     # Question 3 - Plotting Empirical PDF of fitted model
     pdf_values = uni_gaus.pdf(samples)
     pdf_df = pd.DataFrame(np.array([samples, pdf_values]).transpose(), columns=["smpl", "pdf"])
 
-    figure = px.scatter(pdf_df, x="smpl", y="pdf",
-                        labels={"smpl": "Sample Value", "pdf": "Calculated PDF Value"},
-                        title="PDF Values of a set of 1000 samples distributed Normal(10, 1)")
-    figure.show()
+    figure2 = px.scatter(pdf_df, x="smpl", y="pdf",
+                         labels={"smpl": "Sample Value", "pdf": "Calculated PDF Value"},
+                         title="PDF Values of a set of 1000 samples distributed Normal(10, 1)")
+    figure2.show()
 
 
 def test_multivariate_gaussian():
@@ -58,21 +55,21 @@ def test_multivariate_gaussian():
             np.array([linspace[i], 0, linspace[j], 0]), cov, samples) for i in range(200)]
         for j in range(200)])
 
-    fig = px.imshow(log_likelihood_values.T, x=linspace, y=linspace,
-                    labels={"x": "f3", "y": "f1"},
-                    title="Normal Multivariate Distribution as a function of F3/F1, displayed in a Heat-Map")
+    figure1 = px.imshow(log_likelihood_values.T, x=linspace, y=linspace,
+                        labels={"x": "f3", "y": "f1"},
+                        title="Normal Multivariate Distribution as a function of F3/F1, displayed in a Heat-Map")
     # Reverses the y-axis
-    fig.update_yaxes(autorange=True)
-    fig.show()
+    figure1.update_yaxes(autorange=True)
+    figure1.show()
 
     # Question 6 - Maximum likelihood
     max_value = np.max(log_likelihood_values)
     max_indexes = np.where(log_likelihood_values == max_value)
-    print(f'The maximum value is attained at ({linspace[max_indexes[0]][0]}, {linspace[max_indexes[1]][0]}), \
-and gets the value {max_value}')
+    print(f'The maximum value is attained at (f3: {np.round(linspace[max_indexes[1]][0], 3)}, \
+f1: {np.round(linspace[max_indexes[0]][0], 3)}), and gets the value {np.round(max_value, 3)}')
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # test_univariate_gaussian()
+    test_univariate_gaussian()
     test_multivariate_gaussian()
