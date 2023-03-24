@@ -71,5 +71,5 @@ f1: {np.round(linspace[max_indexes[0]][0], 3)}), and gets the value {np.round(ma
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # test_univariate_gaussian()
+    test_univariate_gaussian()
     test_multivariate_gaussian()
