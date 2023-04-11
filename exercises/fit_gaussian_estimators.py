@@ -27,10 +27,9 @@ def test_univariate_gaussian():
 
     # Question 3 - Plotting Empirical PDF of fitted model
     pdf_values = uni_gaus.pdf(samples)
-    pdf_df = pd.DataFrame(np.array([samples, pdf_values]).transpose(), columns=["smpl", "pdf"])
 
-    figure2 = px.scatter(pdf_df, x="smpl", y="pdf",
-                         labels={"smpl": "Sample Value", "pdf": "Calculated PDF Value"},
+    figure2 = px.scatter(x=samples, y=pdf_values,
+                         labels=dict(x="Sample Value", y="Calculated PDF Value"),
                          title="PDF Values of a set of 1000 samples distributed Normal(10, 1)")
     figure2.show()
 
@@ -58,6 +57,7 @@ def test_multivariate_gaussian():
     figure1 = px.imshow(log_likelihood_values.T, x=linspace, y=linspace,
                         labels={"x": "f3", "y": "f1"},
                         title="Normal Multivariate Distribution as a function of F3/F1, displayed in a Heat-Map")
+
     # Reverses the y-axis
     figure1.update_yaxes(autorange=True)
     figure1.show()
