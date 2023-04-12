@@ -1,6 +1,9 @@
 from __future__ import annotations
 from typing import NoReturn
+
 from ...base import BaseEstimator
+from ...metrics import mean_square_error
+
 import numpy as np
 from numpy.linalg import pinv
 
@@ -12,7 +15,7 @@ class LinearRegression(BaseEstimator):
     Solving Ordinary Least Squares optimization problem
     """
 
-    def __init__(self, include_intercept: bool = True) -> LinearRegression:
+    def __init__(self, include_intercept: bool = True):
         """
         Instantiate a linear regression estimator
 
@@ -30,7 +33,9 @@ class LinearRegression(BaseEstimator):
             Coefficients vector fitted by linear regression. To be set in
             `LinearRegression.fit` function.
         """
+
         super().__init__()
+
         self.include_intercept_, self.coefs_ = include_intercept, None
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
@@ -49,7 +54,14 @@ class LinearRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        raise NotImplementedError()
+
+        # If we have an intercept, we want to add a 0th feature which is a column of ones
+        if self.include_intercept_:
+            X = np.c_[np.ones(len(X)), X]
+            # X = np.insert(X, 0, np.ones(len(X)), axis=1)
+
+        # Computes the Moore-Penrose Pseudo-inverse of X and calculate w
+        self.coefs_ = pinv(X) @ y
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -65,7 +77,13 @@ class LinearRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+
+        # If we have an intercept, we want to add a 0th feature which is a column of ones
+        if self.include_intercept_:
+            X = np.c_[np.ones(len(X)), X]
+
+        # To predict the response of a same (row in x), we can multiply that row by the coefficients
+        return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -84,4 +102,5 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        raise NotImplementedError()
+
+        return mean_square_error(self._predict(X), y)
