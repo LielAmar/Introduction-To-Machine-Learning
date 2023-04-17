@@ -11,7 +11,7 @@ import plotly.io as pio
 
 pio.templates.default = "simple_white"
 
-last_process_cols = []
+averages = dict()
 
 def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
     """
@@ -28,68 +28,57 @@ def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
     DataFrame or a Tuple[DataFrame, Series]
     """
 
-    # If X and Y doesn't have matching indexes, we have an error
-    # if y is not None:
-    #     if not X.index.equals(y.index):
-    #         raise IndexError("X and y does not match in their indexes")
-
-    # Remove entries with invalid prices
+    # Fix samples with invalid price to be defaulted to average price
     if y is not None:
-        y = y.dropna()
-        y = y.loc[y.astype(int) > 0]
-        X = X.loc[y.index]
+        y = y.fillna(np.mean(y[y > 0]))
+
+        averages['yr_built'] = np.mean([X['yr_built'] > 0])
+        averages['sqft_living'] = np.mean([X['sqft_living'] > 0])
+        averages['sqft_lot'] = np.mean([X['sqft_lot'] > 0])
+
+        averages['sqft_living15'] = np.mean([X['sqft_living15'] >= 0])
+        averages['sqft_lot15'] = np.mean([X['sqft_lot15'] >= 0])
+
+        averages['bedrooms'] = np.mean([X['bedrooms'] >= 0])
+        averages['bathrooms'] = np.mean([X['bathrooms'] >= 0])
+
+        averages['floors'] = np.mean([X['floors'] >= 0])
+        averages['yr_renovated'] = np.mean([X['yr_renovated'] >= 0])
+
 
     # Remove redundant features
-    # - id: The id of the house
-    # - date: Selling date of the house can be ignored
-    # - lat & long: Can be ignored because Zipcode is provided
-    # - sqft_living15 & sqft_lot15: Data on neighbours can be ignored
-    X = X.drop(['id', 'date', 'lat', 'long', 'sqft_living15', 'sqft_lot15'], axis=1)
+    X = X.drop(['id', 'date', 'lat', 'long'], axis=1)
 
-    # Remove entries that are invalid (NaN/Negative fields/Values that don't match the field's  description)
-    X = X.dropna(how='any')
-    X = X[(X['sqft_living'].astype(float) > 0) & (X['sqft_lot'].astype(float) > 0) &
-          (X['sqft_above'].astype(float) > 0) & (X['yr_built'].astype(float) > 0)]
+    # Fix samples that are invalid (NaN/Negative fields/Values that don't match the field's description)
+    X = X.fillna(0)
+    X.loc[X['yr_built'] <= 0, 'yr_built'] = averages['yr_built']
+    X.loc[X['sqft_living'] <= 0, 'sqft_living'] = averages['sqft_living']
+    X.loc[X['sqft_lot'] <= 0, 'sqft_lot'] = averages['sqft_lot']
 
-    X = X[(X['bedrooms'].astype(float) >= 0) & (X['bathrooms'].astype(float) >= 0) & (X['floors'].astype(float) >= 0) &
-          (X['sqft_basement'].astype(float) >= 0) & (X['yr_renovated'].astype(float) >= 0)]
+    X.loc[X['sqft_basement'] < 0, 'sqft_basement'] = 0
+    X.loc[X['sqft_above'] < 0, 'sqft_above'] = 0
 
-    X = X[X['waterfront'].astype(int).isin(range(0, 1)) & X['condition'].astype(int).isin(range(1, 6)) &
-          X['view'].astype(int).isin(range(0, 5)) & X['grade'].astype(int).isin(range(1, 15))]
+    X.loc[X['sqft_living15'] < 0, 'sqft_living15'] = averages['sqft_living15']
+    X.loc[X['sqft_lot15'] < 0, 'sqft_lot15'] = averages['sqft_lot15']
 
-    X = X[(X['bedrooms'].astype(float) <= 20) & (X['sqft_lot'].astype(float) <= 1000000)]
+    X.loc[X['bedrooms'] < 0, 'bedrooms'] = averages['bedrooms']
+    X.loc[X['bedrooms'] > 10, 'bedrooms'] = 10
+    X.loc[X['bathrooms'] < 0, 'bathrooms'] = averages['bathrooms']
+    X.loc[X['bathrooms'] > 10, 'bathrooms'] = 10
 
+    X.loc[X['floors'] < 0, 'floors'] = averages['floors']
+    X.loc[X['yr_renovated'] < 0, 'yr_renovated'] = averages['yr_renovated']
 
-    # Add new features for other information we can infer:
-    # - is_renovated
-    # - is_old
-    X['is_renovated'] = np.where(((2015 - X['yr_renovated'].astype(float)) <= 20), 1, 0)
-    X['is_old'] = np.where(((2015 - X['yr_built'].astype(float) >= 40) &
-                            (2015 - X['yr_renovated'].astype(float) >= 40)), 1, 0)
-    X = X.drop(['yr_renovated'], axis=1)
+    X.loc[X['waterfront'] < 0, 'waterfront'] = 0
+    X.loc[X['waterfront'] > 1, 'waterfront'] = 1
+    X.loc[X['condition'] < 1, 'condition'] = 1
+    X.loc[X['condition'] > 5, 'condition'] = 5
+    X.loc[X['view'] < 0, 'view'] = 0
+    X.loc[X['view'] > 4, 'view'] = 4
+    X.loc[X['grade'] < 1, 'grade'] = 1
+    X.loc[X['grade'] > 15, 'grade'] = 15
 
-    global last_process_cols
-
-    # If we've received a y variable, it means we're currently processing data that is used for fitting.
-    # Therefore, we'd like to save all the columns X has, so we can later on retrieve them on test sets.
-    if y is not None:
-        # Remove categorical features
-        # - zipcode: The value of zipcode doesn't affect the price directly, so it's categorical
-        X = pd.get_dummies(X, prefix='zipcode', columns=['zipcode'])
-
-        y = y[X.index]
-
-        last_process_cols = X.columns
-
-    # Otherwise, we're currently processing data that is used for testing.
-    # We want to add the missing columns to X so it can later on be used for testing.
-    else:
-        for column in last_process_cols:
-            if column not in X.columns:
-                zc = column.replace("zipcode_", "").replace(".0", "")
-                X[column] = np.where(X['zipcode'] == zc, 1, 0)
-
-        X = X.drop(['zipcode'], axis=1)
+    X = pd.get_dummies(X, prefix='zipcode', columns=['zipcode'])
 
     return X, y
 
@@ -165,7 +154,7 @@ if __name__ == '__main__':
             fit_X = train_X.sample(frac=(percentage / 100))
             fit_Y = train_Y[fit_X.index]
 
-            linear_model.fit(fit_X, fit_Y)
+            linear_model.fit(fit_X.to_numpy(), fit_Y)
 
             losses[(percentage - 10), iteration] = linear_model.loss(np.array(test_X), np.array(test_Y))
 
@@ -175,16 +164,16 @@ if __name__ == '__main__':
     losses_var = losses.std(axis=1)
 
     go.Figure([
-            go.Scatter(x=np.arange(10, 101), y=losses_mean, name="Real Mean",
-                       mode="markers+lines",
-                       marker=dict(color="blue", opacity=1)),
-            go.Scatter(x=np.arange(10, 101), y=(losses_mean - 2 * losses_var), name="Error Ribbon",
-                       mode="markers+lines", fill='tonexty',
-                       marker=dict(color="lightgrey", opacity=.5), line=dict(color="lightgrey")),
-            go.Scatter(x=np.arange(10, 101), y=(losses_mean + 2 * losses_var), name="Error Ribbon",
-                       mode="markers+lines", fill='tonexty',
-                       marker=dict(color="lightgrey", opacity=.5), line=dict(color="lightgrey"))
-        ],
+        go.Scatter(x=np.arange(10, 101), y=losses_mean, name="Real Mean",
+                   mode="markers+lines",
+                   marker=dict(color="blue", opacity=1)),
+        go.Scatter(x=np.arange(10, 101), y=(losses_mean - 2 * losses_var), name="Error Ribbon",
+                   mode="markers+lines", fill='tonexty',
+                   marker=dict(color="lightgrey", opacity=.5), line=dict(color="lightgrey")),
+        go.Scatter(x=np.arange(10, 101), y=(losses_mean + 2 * losses_var), name="Error Ribbon",
+                   mode="markers+lines", fill='tonexty',
+                   marker=dict(color="lightgrey", opacity=.5), line=dict(color="lightgrey"))
+    ],
 
         layout=go.Layout(
             title=f"Mean loss as a function of the percentage of data used for fitting the model",
