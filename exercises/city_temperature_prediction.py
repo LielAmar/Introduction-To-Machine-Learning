@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
+
 pio.templates.default = "simple_white"
 
 
@@ -21,16 +22,44 @@ def load_data(filename: str) -> pd.DataFrame:
     -------
     Design matrix and response vector (Temp)
     """
-    raise NotImplementedError()
+
+    df = pd.read_csv(filename, parse_dates=['Date'])
+    df.fillna(0)
+
+    # We can drop data that is too odd to be real (samples with -72 degrees)
+    df = df[df['Temp'] > -72]
+
+    # Adding the DayOfYear column
+    df['DayOfYear'] = df['Date'].dt.dayofyear
+
+    return df
 
 
 if __name__ == '__main__':
     np.random.seed(0)
+
     # Question 1 - Load and preprocessing of city temperature dataset
-    raise NotImplementedError()
+    df = load_data("../datasets/City_Temperature.csv")
 
     # Question 2 - Exploring data for specific country
-    raise NotImplementedError()
+    # Extracting only Israel's data (and converting Year to be string for discrete color scaling)
+    israel_data = df[df['Country'] == 'Israel']
+    israel_data = israel_data.astype({'Year': 'str'})
+
+    # First graph/figure
+    fig = px.scatter(israel_data, x="DayOfYear", y="Temp", color="Year",
+                     title="Israel's Temperature as a function of the day of the year")
+    fig.update_xaxes(title_text="Day of the Year")
+    fig.update_yaxes(title_text="Temperature")
+    fig.write_image(f"./ex2_graphs/israel_temp_scatter.png")
+
+    # Second graph/figure
+    fig = px.bar(israel_data.groupby(["Month"], as_index=False).agg(std=('Temp', 'std')),
+                 x="Month", y="std",
+                 title="Israel's Temperature Standard Deviation by Month")
+    fig.update_xaxes(title_text="Month")
+    fig.update_yaxes(title_text="STD")
+    fig.write_image(f"./ex2_graphs/israel_temp_bar.png")
 
     # Question 3 - Exploring differences between countries
     raise NotImplementedError()
