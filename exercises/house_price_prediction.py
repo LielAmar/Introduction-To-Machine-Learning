@@ -28,51 +28,55 @@ def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
     DataFrame or a Tuple[DataFrame, Series]
     """
 
-    # If X and Y doesn't have matching indexes, we have an error
-    # if y is not None:
-    #     if not X.index.equals(y.index):
-    #         raise IndexError("X and y does not match in their indexes")
-
-    # Remove entries with invalid prices
-    if y is not None:
-        y = y.dropna()
-        y = y.loc[y.astype(int) > 0]
-        X = X.loc[y.index]
+    in_training = (y is not None)
 
     # Remove redundant features
     # - id: The id of the house
     # - date: Selling date of the house can be ignored
     # - lat & long: Can be ignored because Zipcode is provided
     # - sqft_living15 & sqft_lot15: Data on neighbours can be ignored
-    X = X.drop(['id', 'date', 'lat', 'long', 'sqft_living15', 'sqft_lot15'], axis=1)
+    X = X.drop(['id', 'date', 'lat', 'long'], axis=1)
+    # , 'sqft_living15', 'sqft_lot15'
 
-    # Remove entries that are invalid (NaN/Negative fields/Values that don't match the field's  description)
-    X = X.dropna(how='any')
-    X = X[(X['sqft_living'].astype(float) > 0) & (X['sqft_lot'].astype(float) > 0) &
-          (X['sqft_above'].astype(float) > 0) & (X['yr_built'].astype(float) > 0)]
 
-    X = X[(X['bedrooms'].astype(float) >= 0) & (X['bathrooms'].astype(float) >= 0) & (X['floors'].astype(float) >= 0) &
-          (X['sqft_basement'].astype(float) >= 0) & (X['yr_renovated'].astype(float) >= 0)]
+    # If we are in training, we are allowed to remove samples that are invalid:
+    # Non-Positive price, unbounded values etc.
+    if in_training:
+        # Remove samples with invalid prices
+        y = y.dropna()
+        y = y.loc[y.astype(int) > 0]
+        X = X.loc[y.index]
 
-    X = X[X['waterfront'].astype(int).isin(range(0, 1)) & X['condition'].astype(int).isin(range(1, 6)) &
-          X['view'].astype(int).isin(range(0, 5)) & X['grade'].astype(int).isin(range(1, 15))]
+        # Remove samples that are invalid (NaN/Negative fields/Values that don't match the field's description)
+        X = X.dropna()
+        X = X[(X['sqft_living'].astype(float) > 0) & (X['sqft_lot'].astype(float) > 0) &
+              (X['sqft_above'].astype(float) > 0) & (X['yr_built'].astype(float) > 0)]
 
-    X = X[(X['bedrooms'].astype(float) <= 20) & (X['sqft_lot'].astype(float) <= 1000000)]
+        X = X[(X['bedrooms'].astype(float) >= 0) & (X['bathrooms'].astype(float) >= 0) & (X['floors'].astype(float) >= 0) &
+              (X['sqft_basement'].astype(float) >= 0) & (X['yr_renovated'].astype(float) >= 0)]
 
+        X = X[X['waterfront'].astype(int).isin(range(0, 1)) & X['condition'].astype(int).isin(range(1, 6)) &
+              X['view'].astype(int).isin(range(0, 5)) & X['grade'].astype(int).isin(range(1, 15))]
+
+        X = X[(X['bedrooms'].astype(float) <= 20) & (X['sqft_lot'].astype(float) <= 1000000)]
+
+        # Keep only prices that match a sample
+        y = y.loc[X.index]
+    else:
+        X = X.fillna(0)
 
     # Add new features for other information we can infer:
     # - is_renovated
     # - is_old
     X['is_renovated'] = np.where(((2015 - X['yr_renovated'].astype(float)) <= 20), 1, 0)
-    X['is_old'] = np.where(((2015 - X['yr_built'].astype(float) >= 40) &
-                            (2015 - X['yr_renovated'].astype(float) >= 40)), 1, 0)
+    # X['is_old'] = np.where(((2015 - X['yr_built'].astype(float) >= 40) &
+    #                         (2015 - X['yr_renovated'].astype(float) >= 40)), 1, 0)
     X = X.drop(['yr_renovated'], axis=1)
 
     global last_process_cols
 
-    # If we've received a y variable, it means we're currently processing data that is used for fitting.
-    # Therefore, we'd like to save all the columns X has, so we can later on retrieve them on test sets.
-    if y is not None:
+    # If we're in train, we'd like to save all the columns X has, so we can later on retrieve them on test sets.
+    if in_training:
         # Remove categorical features
         # - zipcode: The value of zipcode doesn't affect the price directly, so it's categorical
         X = pd.get_dummies(X, prefix='zipcode', columns=['zipcode'])
@@ -81,15 +85,18 @@ def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
 
         last_process_cols = X.columns
 
-    # Otherwise, we're currently processing data that is used for testing.
-    # We want to add the missing columns to X so it can later on be used for testing.
+    # Otherwise, add the missing columns to X, so it can later on be used for testing.
     else:
         for column in last_process_cols:
             if column not in X.columns:
                 zc = column.replace("zipcode_", "").replace(".0", "")
                 X[column] = np.where(X['zipcode'] == zc, 1, 0)
 
-        X = X.drop(['zipcode'], axis=1)
+        for column in X.columns:
+            if column not in last_process_cols:
+                X = X.drop([column], axis=1)
+
+        # X = X.drop(['zipcode'], axis=1)
 
     return X, y
 
@@ -119,7 +126,7 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
 
         # Calculates the Pearson Correlation of every feature and the result series
         # We care about the cov[0][1] (or cov[1][0]) because it holds the relation between the first & second vector
-        pc = np.cov(f, y)[0][1] / (np.std(f) * y_std)
+        pc = np.around(np.cov(f, y)[0][1] / (np.std(f) * y_std), 3)
 
         # Plotting a scatter graph representing the relation between the feature and the response
         px.scatter(x=f, y=y, trendline="ols",
