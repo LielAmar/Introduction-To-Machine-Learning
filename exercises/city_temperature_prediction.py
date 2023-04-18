@@ -53,12 +53,11 @@ if __name__ == '__main__':
     fig.update_yaxes(title_text="Temperature")
     fig.write_image(f"./ex2_graphs/israel_temp_scatter.png")
 
-    # Second graph/figure
-    fig = px.bar(israel_data.groupby(["Month"], as_index=False).agg(std=('Temp', 'std')),
-                 x="Month", y="std",
+    # Second graph/figure (grouping by Month, then applying std() on the Temperatures of each month)
+    fig = px.bar(x=np.arange(1, 13), y=israel_data.groupby(["Month"])['Temp'].std(),
                  title="Israel's Temperature Standard Deviation by Month")
     fig.update_xaxes(title_text="Month")
-    fig.update_yaxes(title_text="STD")
+    fig.update_yaxes(title_text="Standard Deviation")
     fig.write_image(f"./ex2_graphs/israel_temp_bar.png")
 
     # Question 3 - Exploring differences between countries

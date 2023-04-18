@@ -45,6 +45,9 @@ def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
         averages['floors'] = np.mean([X['floors'] >= 0])
         averages['yr_renovated'] = np.mean([X['yr_renovated'] >= 0])
 
+        # Removing samples with invalid zipcodes (to avoid non-matching columns between train and test sets)
+        X = X[X['zipcode'] > 0]
+        y = y.loc[X.index]
 
     # Remove redundant features
     X = X.drop(['id', 'date', 'lat', 'long'], axis=1)
@@ -131,7 +134,7 @@ if __name__ == '__main__':
     train_X, train_Y = preprocess_data(train_X, train_Y)
 
     # Question 3 - Feature evaluation with respect to response
-    # feature_evaluation(train_X, train_Y, './ex2_graphs')
+    feature_evaluation(train_X, train_Y, './ex2_graphs')
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -142,9 +145,11 @@ if __name__ == '__main__':
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
     linear_model = LinearRegression(True)
 
-    # Processing the test data, and keeping only relevant results
+    # Processing the test data, and keeping only test samples that have a valid price, otherwise the squared error
+    # won't be valid.
+    test_Y = test_Y[test_Y > 0]
+    test_X = test_X.loc[test_Y.index]
     test_X = preprocess_data(test_X, None)[0]
-    test_Y = test_Y[test_X.index]
 
     # Calculating losses for every iteration of every percentage
     losses = np.empty(shape=(91, 10))
