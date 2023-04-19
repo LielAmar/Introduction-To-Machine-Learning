@@ -21,7 +21,7 @@ class PolynomialFitting(LinearRegression):
             Degree of polynomial to fit
         """
 
-        super().__init__(include_intercept=True)
+        self.linear_model = LinearRegression(include_intercept=True)
 
         self.degree = k
 
@@ -38,7 +38,7 @@ class PolynomialFitting(LinearRegression):
             Responses of input data to fit to
         """
 
-        super()._fit(self.__transform(X), y)
+        self.linear_model._fit(self.__transform(X), y)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -55,7 +55,7 @@ class PolynomialFitting(LinearRegression):
             Predicted responses of given samples
         """
 
-        super()._predict(self.__transform(X))
+        self.linear_model._predict(self.__transform(X))
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -75,7 +75,7 @@ class PolynomialFitting(LinearRegression):
             Performance under MSE loss function
         """
 
-        return super()._loss(self.__transform(X), y)
+        return self.linear_model._loss(self.__transform(X), y)
 
     def __transform(self, X: np.ndarray) -> np.ndarray:
         """

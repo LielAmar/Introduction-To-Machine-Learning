@@ -26,8 +26,8 @@ def load_data(filename: str) -> pd.DataFrame:
     df = pd.read_csv(filename, parse_dates=['Date'])
     df.fillna(0)
 
-    # We can drop data that is too odd to be real (samples with -72 degrees)
-    df = df[df['Temp'] > -72]
+    # We can drop data that is too odd to be real (samples with lower temperature than -40 degrees)
+    df = df[df['Temp'] > -40]
 
     # Adding the DayOfYear column
     df['DayOfYear'] = df['Date'].dt.dayofyear
@@ -61,10 +61,47 @@ if __name__ == '__main__':
     fig.write_image(f"./ex2_graphs/israel_temp_bar.png")
 
     # Question 3 - Exploring differences between countries
-    raise NotImplementedError()
+    mean_country_month_temp = df.groupby(["Country", "Month"])['Temp'].mean()
+    std_country_month_temp = df.groupby(["Country", "Month"])['Temp'].std()
 
-    # Question 4 - Fitting model for different values of `k`
-    raise NotImplementedError()
+    fig = px.line(df.groupby(["Country", "Month"], as_index=False) \
+                  .agg(avg=("Temp", "mean"), std=("Temp", "std")),
+                  x="Month", y="avg", error_y="std", color="Country",
+                  title="Average & Standard Deviation of Temperatures per Month, by Country")
+    fig.update_xaxes(title_text="Month")
+    fig.update_yaxes(title_text="Average Temperature")
+    fig.write_image(f"./ex2_graphs/israel_temp_line.png")
+
+    # Question 4 - Fitting model for different values of k
+    israel_train_X, israel_train_Y, israel_test_X, israel_test_Y = \
+        split_train_test(israel_data["DayOfYear"], israel_data["Temp"])
+
+    losses = np.empty(shape=(10,))
+
+    for k in range(1, 11):
+        poly_model = PolynomialFitting(k)
+        poly_model.fit(israel_train_X.to_numpy(), israel_train_Y.to_numpy())
+
+        losses[k - 1] = np.round(poly_model.loss(israel_test_X.to_numpy(), israel_test_Y.to_numpy()), 2)
+        print(f"Loss for polynomial degree of {k} is: {losses[k - 1]}")
+
+    fig = px.bar(x=range(1, 11), y=losses, text=losses,
+                 title="Loss value per polynomial degree")
+    fig.update_xaxes(title_text="Polynom Degree")
+    fig.update_yaxes(title_text="Loss")
+    fig.write_image(f"./ex2_graphs/israel_temp_poly_bar.png")
 
     # Question 5 - Evaluating fitted model on different countries
-    raise NotImplementedError()
+    poly_model = PolynomialFitting(5)
+    poly_model.fit(israel_data["DayOfYear"].to_numpy(), israel_data["Temp"].to_numpy())
+
+    country_error_df = pd.DataFrame([{"country": country,
+                                      "loss": np.round(poly_model.loss(df[df["Country"] == country]["DayOfYear"],
+                                                                       df[df["Country"] == country]["Temp"]), 2)}
+                                     for country in ["Jordan", "South Africa", "The Netherlands"]])
+
+    fig = px.bar(country_error_df, x="country", y="loss", color="country", text="loss",
+                 title="Loss values per country for a model of degree 5, fitted with Israel data")
+    fig.update_xaxes(title_text="Country")
+    fig.update_yaxes(title_text="Loss")
+    fig.write_image(f"./ex2_graphs/israel_temp_country_bar.png")
