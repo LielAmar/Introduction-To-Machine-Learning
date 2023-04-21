@@ -7,7 +7,6 @@ from ...metrics import mean_square_error
 import numpy as np
 from numpy.linalg import pinv
 
-
 class LinearRegression(BaseEstimator):
     """
     Linear Regression Estimator
