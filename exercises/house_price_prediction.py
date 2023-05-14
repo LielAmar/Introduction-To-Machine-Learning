@@ -12,6 +12,8 @@ import plotly.io as pio
 pio.templates.default = "simple_white"
 
 averages = dict()
+columns = []
+
 
 def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
     """
@@ -28,10 +30,19 @@ def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
     DataFrame or a Tuple[DataFrame, Series]
     """
 
-    # Fix samples with invalid price to be defaulted to average price
-    if y is not None:
-        y = y.fillna(np.mean(y[y > 0]))
+    # Remove redundant features
+    X = X.drop(['id', 'date', 'lat', 'long'], axis=1)
 
+    if y is not None:
+        y = y.dropna()
+        y = y[y > 0]
+        X = X.loc[y.index]
+
+        # Drops samples with invalid zipcodes (to avoid non-matching columns between train and test sets)
+        X = X[X['zipcode'] > 0]
+        y = y.loc[X.index]
+
+        # Calculates averages
         averages['yr_built'] = np.mean([X['yr_built'] > 0])
         averages['sqft_living'] = np.mean([X['sqft_living'] > 0])
         averages['sqft_lot'] = np.mean([X['sqft_lot'] > 0])
@@ -43,34 +54,28 @@ def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
         averages['bathrooms'] = np.mean([X['bathrooms'] >= 0])
 
         averages['floors'] = np.mean([X['floors'] >= 0])
-        averages['yr_renovated'] = np.mean([X['yr_renovated'] >= 0])
-
-        # Removing samples with invalid zipcodes (to avoid non-matching columns between train and test sets)
-        X = X[X['zipcode'] > 0]
-        y = y.loc[X.index]
-
-    # Remove redundant features
-    X = X.drop(['id', 'date', 'lat', 'long'], axis=1)
 
     # Fix samples that are invalid (NaN/Negative fields/Values that don't match the field's description)
     X = X.fillna(0)
-    X.loc[X['yr_built'] <= 0, 'yr_built'] = averages['yr_built']
+
     X.loc[X['sqft_living'] <= 0, 'sqft_living'] = averages['sqft_living']
     X.loc[X['sqft_lot'] <= 0, 'sqft_lot'] = averages['sqft_lot']
 
-    X.loc[X['sqft_basement'] < 0, 'sqft_basement'] = 0
-    X.loc[X['sqft_above'] < 0, 'sqft_above'] = 0
-
     X.loc[X['sqft_living15'] < 0, 'sqft_living15'] = averages['sqft_living15']
     X.loc[X['sqft_lot15'] < 0, 'sqft_lot15'] = averages['sqft_lot15']
+
+    X.loc[X['floors'] < 0, 'floors'] = averages['floors']
+
+    X.loc[X['yr_built'] <= 0, 'yr_built'] = averages['yr_built']
+    X.loc[X['yr_renovated'] < 0, 'yr_renovated'] = 0
+
+    X.loc[X['sqft_basement'] < 0, 'sqft_basement'] = 0
+    X.loc[X['sqft_above'] < 0, 'sqft_above'] = 0
 
     X.loc[X['bedrooms'] < 0, 'bedrooms'] = averages['bedrooms']
     X.loc[X['bedrooms'] > 10, 'bedrooms'] = 10
     X.loc[X['bathrooms'] < 0, 'bathrooms'] = averages['bathrooms']
     X.loc[X['bathrooms'] > 10, 'bathrooms'] = 10
-
-    X.loc[X['floors'] < 0, 'floors'] = averages['floors']
-    X.loc[X['yr_renovated'] < 0, 'yr_renovated'] = averages['yr_renovated']
 
     X.loc[X['waterfront'] < 0, 'waterfront'] = 0
     X.loc[X['waterfront'] > 1, 'waterfront'] = 1
@@ -82,6 +87,14 @@ def preprocess_data(X: pd.DataFrame, y: Optional[pd.Series] = None):
     X.loc[X['grade'] > 15, 'grade'] = 15
 
     X = pd.get_dummies(X, prefix='zipcode', columns=['zipcode'])
+
+    global columns
+
+    if y is not None:
+        columns = X.columns
+    else:
+        # Makes sure X has the same columns in both train and test
+        X = X.reindex(columns=columns, fill_value=0)
 
     return X, y
 
@@ -147,7 +160,7 @@ if __name__ == '__main__':
 
     # Processing the test data, and keeping only test samples that have a valid price, otherwise the squared error
     # won't be valid.
-    test_Y = test_Y[test_Y > 0]
+    test_Y = test_Y.dropna()
     test_X = test_X.loc[test_Y.index]
     test_X = preprocess_data(test_X, None)[0]
 

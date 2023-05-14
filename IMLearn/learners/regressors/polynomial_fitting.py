@@ -55,7 +55,7 @@ class PolynomialFitting(LinearRegression):
             Predicted responses of given samples
         """
 
-        self.linear_model._predict(self.__transform(X))
+        return self.linear_model._predict(self.__transform(X))
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
