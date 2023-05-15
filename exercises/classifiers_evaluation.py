@@ -36,16 +36,26 @@ def run_perceptron():
     Create a line plot that shows the perceptron algorithm's training loss values (y-axis)
     as a function of the training iterations (x-axis).
     """
-    for n, f in [("Linearly Separable", "linearly_separable.npy"), ("Linearly Inseparable", "linearly_inseparable.npy")]:
+
+    for n, f in [("Linearly Separable", "linearly_separable.npy"),
+                 ("Linearly Inseparable", "linearly_inseparable.npy")]:
+        print(n)
         # Load dataset
-        raise NotImplementedError()
+        X, y = load_dataset(f"../datasets/{f}")
 
         # Fit Perceptron and record loss in each fit iteration
         losses = []
-        raise NotImplementedError()
+
+        # Creating a callback that adds the current loss on X and y
+        Perceptron(callback=lambda perc, _, __: losses.append(perc.loss(X, y))).fit(X, y)
 
         # Plot figure of loss as function of fitting iteration
-        raise NotImplementedError()
+        fig = go.Figure(data=go.Scatter(x=np.arange(len(losses)), y=losses,
+                        mode="markers+lines", marker=dict(color="grey", opacity=1), line=dict(color="black")),
+                        layout=go.Layout(title="Perception's Loss as a function of the Fitting Iteration"))
+        fig.update_xaxes(title_text="Fitting Iteration")
+        fig.update_yaxes(title_text="Loss")
+        fig.write_image(f"./ex3_graphs/{n}_loss_graph.png")
 
 
 def get_ellipse(mu: np.ndarray, cov: np.ndarray):
