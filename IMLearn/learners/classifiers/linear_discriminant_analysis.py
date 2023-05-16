@@ -64,6 +64,8 @@ class LDA(BaseEstimator):
 
         self._cov_inv = inv(self.cov_)
 
+        return self
+
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict responses for given samples using fitted estimator

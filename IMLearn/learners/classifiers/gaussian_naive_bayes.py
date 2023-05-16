@@ -55,6 +55,8 @@ class GaussianNaiveBayes(BaseEstimator):
         #        k mus
         self.var_ = np.array([np.var(X[y == clazz], axis=0, ddof=1) for clazz in self.classes_])
 
+        return self
+
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict responses for given samples using fitted estimator

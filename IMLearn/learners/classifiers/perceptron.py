@@ -91,7 +91,7 @@ class Perceptron(BaseEstimator):
 
             # If we don't have any errors, we are good to go
             if misclassification_error(self._predict(X), y) == 0:
-                return
+                return self
 
             # Otherwise, loop over all samples and if we didn't get the current one right, adjust the coefficients
             for i in range(X.shape[0]):
@@ -99,6 +99,8 @@ class Perceptron(BaseEstimator):
                     self.coefs_ = self.coefs_ + (y[i] * X[i])
                     self.callback_(self, X[i], y[i])
                     break
+
+        return self
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """

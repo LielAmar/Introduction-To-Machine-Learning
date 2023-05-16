@@ -8,6 +8,7 @@ from IMLearn.metrics import accuracy
 
 BASE_PATH = "../datasets"
 
+
 def load_dataset(filename: str) -> Tuple[np.ndarray, np.ndarray]:
     """
     Load dataset for comparing the Gaussian Naive Bayes and LDA classifiers. File is assumed to be an
@@ -52,7 +53,7 @@ def run_perceptron():
 
         # Plot figure of loss as function of fitting iteration
         fig = go.Figure([go.Scatter(x=np.arange(len(losses)), y=losses,
-                        mode="lines", line=dict(color="grey"))],
+                                    mode="lines", line=dict(color="grey"))],
                         layout=go.Layout(title="Perception's Loss as a function of the Fitting Iteration"))
         fig.update_xaxes(title_text="Fitting Iteration")
         fig.update_yaxes(title_text="Loss")
@@ -121,23 +122,23 @@ def compare_gaussian_classifiers():
                                                colorscale=class_colors(3)))],
                        rows=[1, 1], cols=[1, 2])
 
-
         # Add `X` dots specifying fitted Gaussians' means
-        fig.add_traces([go.Scatter(x=gnb.mu_[:, 0], y=gnb.mu_[:, 1], mode="markers", marker=dict(symbol="x", color="black", size=15)),
-                        go.Scatter(x=lda.mu_[:, 0], y=lda.mu_[:, 1], mode="markers", marker=dict(symbol="x", color="black", size=15))],
+        fig.add_traces([go.Scatter(x=gnb.mu_[:, 0], y=gnb.mu_[:, 1], mode="markers",
+                                   marker=dict(symbol="x", color="black", size=15)),
+                        go.Scatter(x=lda.mu_[:, 0], y=lda.mu_[:, 1], mode="markers",
+                                   marker=dict(symbol="x", color="black", size=15))],
                        rows=[1, 1], cols=[1, 2])
 
-        fig.write_image("./ex3_graphs/gnb_vs_lda2.png")
-
         # Add ellipses depicting the covariances of the fitted Gaussians
-        raise NotImplementedError()
+        for i in range(3):
+            fig.add_traces([get_ellipse(gnb.mu_[i], np.diag(gnb.var_[i])),
+                            get_ellipse(lda.mu_[i], lda.cov_)],
+                           rows=[1, 1], cols=[1, 2])
 
-        # for i in range(3):
-        #     fig.add_traces([get_ellipse(gnb.mu_[i], np.diag(gnb.var_[i])),
-        #                     get_ellipse(lda.mu_[i], lda.cov_)],
-        #         rows=[1, 1], cols=[1, 2])
+        fig.update_layout(width=800, height=400, showlegend=False)
 
-        # fig.write_image("./ex3_graphs/gnb_vs_lda.png")
+        fig.write_image(f"./ex3_graphs/gnb_vs_lda_{f}.png")
+
 
 if __name__ == '__main__':
     np.random.seed(0)
