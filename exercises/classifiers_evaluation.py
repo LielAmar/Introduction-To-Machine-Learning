@@ -39,7 +39,6 @@ def run_perceptron():
 
     for n, f in [("Linearly Separable", "linearly_separable.npy"),
                  ("Linearly Inseparable", "linearly_inseparable.npy")]:
-        print(n)
         # Load dataset
         X, y = load_dataset(f"../datasets/{f}")
 
@@ -50,8 +49,8 @@ def run_perceptron():
         Perceptron(callback=lambda perc, _, __: losses.append(perc.loss(X, y))).fit(X, y)
 
         # Plot figure of loss as function of fitting iteration
-        fig = go.Figure(data=go.Scatter(x=np.arange(len(losses)), y=losses,
-                        mode="markers+lines", marker=dict(color="grey", opacity=1), line=dict(color="black")),
+        fig = go.Figure([go.Scatter(x=np.arange(len(losses)), y=losses,
+                        mode="lines", line=dict(color="grey"))],
                         layout=go.Layout(title="Perception's Loss as a function of the Fitting Iteration"))
         fig.update_xaxes(title_text="Fitting Iteration")
         fig.update_yaxes(title_text="Loss")
@@ -87,6 +86,7 @@ def compare_gaussian_classifiers():
     """
     Fit both Gaussian Naive Bayes and LDA classifiers on both gaussians1 and gaussians2 datasets
     """
+
     for f in ["gaussian1.npy", "gaussian2.npy"]:
         # Load dataset
         raise NotImplementedError()

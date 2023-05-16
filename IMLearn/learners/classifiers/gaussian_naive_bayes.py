@@ -1,5 +1,6 @@
 from typing import NoReturn
 from ...base import BaseEstimator
+from ...metrics import misclassification_error
 import numpy as np
 
 class GaussianNaiveBayes(BaseEstimator):
@@ -39,7 +40,17 @@ class GaussianNaiveBayes(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+        # Saves unique y values and the number of appearances each have (normalized)
+        self.classes_, self.pi_ = np.unique(y, return_counts=True)
+        self.pi_ = self.pi_ / len(y)
+
+        # According to the MLE mu defined in Q3 A
+        self.mu_ = np.ndarray([np.mean(X[y == clazz], axis=0) for clazz in self.classes_])
+
+        # According to the MLE cov defined in Q3 A
+        # DDOF = 1 because each variance has a single mu, unlike LDA where each (and only) variance, has
+        #        k mus
+        self.var_ = np.ndarray([np.var(X[y == clazz], axis=0, ddof=1) for clazz in self.classes_])
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -55,7 +66,8 @@ class GaussianNaiveBayes(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+
+        return self.classes_[np.argmax(self.likelihood(X), axis=1)]
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """
@@ -72,10 +84,20 @@ class GaussianNaiveBayes(BaseEstimator):
             The likelihood for each sample under each of the classes
 
         """
+
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
 
-        raise NotImplementedError()
+        likelihoods = np.zeros(shape=(len(X), len(self.classes_)))
+
+        # For each sample, calculate its pdf with each class' parameters (Mu & Cov)
+        for i in range(len(X)):
+            for k in range(len(self.classes_)):
+                likelihoods[i, k] = np.exp(-0.5 * np.power((X[i] - self.mu_[k]) / (np.sqrt(self.var_[k])), 2)) \
+                                    / np.sqrt(2 * np.pi * self.var_[k])
+
+        return likelihoods
+
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -94,5 +116,5 @@ class GaussianNaiveBayes(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        from ...metrics import misclassification_error
-        raise NotImplementedError()
+
+        return misclassification_error(y, self.predict(X))
