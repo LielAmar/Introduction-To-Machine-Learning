@@ -108,8 +108,8 @@ def compare_gaussian_classifiers():
         # Create subplots
         fig = make_subplots(rows=1, cols=2,
                             subplot_titles=[
-                                f"Gaussian Naive Bayes (accuracy = {np.round(100 * accuracy(y, gnb_prediction), 2)})",
-                                f"LDA (accuracy = {round(100 * accuracy(y, lda_prediction))})"],
+                                f"Gaussian Naive Bayes (accuracy = {np.round(100 * accuracy(y, gnb_prediction), 2)}%)",
+                                f"LDA (accuracy = {round(100 * accuracy(y, lda_prediction))}%)"],
                             horizontal_spacing=0.01, vertical_spacing=.03)
 
         # Add traces for data-points setting symbols and colors
@@ -136,6 +136,8 @@ def compare_gaussian_classifiers():
                            rows=[1, 1], cols=[1, 2])
 
         fig.update_layout(width=800, height=400, showlegend=False)
+        fig.update_xaxes(title_text="X Axis")
+        fig.update_yaxes(title_text="Y Axis")
 
         fig.write_image(f"./ex3_graphs/gnb_vs_lda_{f}.png")
 
