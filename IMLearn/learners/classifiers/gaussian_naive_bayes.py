@@ -2,11 +2,14 @@ from typing import NoReturn
 from ...base import BaseEstimator
 from ...metrics import misclassification_error
 import numpy as np
+from numpy.linalg import det, inv
+
 
 class GaussianNaiveBayes(BaseEstimator):
     """
     Gaussian Naive-Bayes classifier
     """
+
     def __init__(self):
         """
         Instantiate a Gaussian Naive Bayes classifier
@@ -45,12 +48,12 @@ class GaussianNaiveBayes(BaseEstimator):
         self.pi_ = self.pi_ / len(y)
 
         # According to the MLE mu defined in Q3 A
-        self.mu_ = np.ndarray([np.mean(X[y == clazz], axis=0) for clazz in self.classes_])
+        self.mu_ = np.array([np.mean(X[y == clazz], axis=0) for clazz in self.classes_])
 
         # According to the MLE cov defined in Q3 A
         # DDOF = 1 because each variance has a single mu, unlike LDA where each (and only) variance, has
         #        k mus
-        self.var_ = np.ndarray([np.var(X[y == clazz], axis=0, ddof=1) for clazz in self.classes_])
+        self.var_ = np.array([np.var(X[y == clazz], axis=0, ddof=1) for clazz in self.classes_])
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -93,11 +96,17 @@ class GaussianNaiveBayes(BaseEstimator):
         # For each sample, calculate its pdf with each class' parameters (Mu & Cov)
         for i in range(len(X)):
             for k in range(len(self.classes_)):
-                likelihoods[i, k] = np.exp(-0.5 * np.power((X[i] - self.mu_[k]) / (np.sqrt(self.var_[k])), 2)) \
-                                    / np.sqrt(2 * np.pi * self.var_[k])
+                cov = np.diag(self.var_[k])
+
+                likelihoods[i, k] = np.power(np.pi, -len(X[i]) * 0.5) * np.power(det(cov), -0.5) * \
+                                    np.exp(-0.5 * (X[i] - self.mu_[k]).T @ inv(cov) @ (X[i] - self.mu_[k])) * \
+                                    self.pi_[k]
+
+                # print(np.exp(-0.5 * np.power((X[i] - self.mu_[k]) / (np.sqrt(self.var_[k])), 2)))
+                # likelihoods[i, k] = (np.exp(-0.5 * np.power((X[i] - self.mu_[k]) / (np.sqrt(self.var_[k])), 2))
+                #                      / np.sqrt(2 * np.pi * self.var_[k])) * self.pi_[k]
 
         return likelihoods
-
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

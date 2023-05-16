@@ -56,11 +56,11 @@ class LDA(BaseEstimator):
         # According to the MLE mu defined in Practice 6.
         # Basically, summing up all Xi s.t. yi is in the current class, and then taking its mean
         # Results in a vector for each class, therefore a matrix of mu
-        self.mu_ = np.ndarray([np.mean(X[y == clazz], axis=0) for clazz in self.classes_])
+        self.mu_ = np.array([np.mean(X[y == clazz], axis=0) for clazz in self.classes_])
 
         # According to the MLE cov defined in Practice 6.
-        self.cov_ = np.sum([(X[y == clazz] - self.mu_[i]) @ (X[y == clazz] - self.mu_[i])
-                            for clazz, i in enumerate(self.classes_)]) / (len(X) - len(self.classes_))
+        self.cov_ = np.sum([(X[y == clazz] - self.mu_[i]).T @ (X[y == clazz] - self.mu_[i])
+                            for clazz, i in enumerate(self.classes_)], axis=0) / (len(X) - len(self.classes_))
 
         self._cov_inv = inv(self.cov_)
 
