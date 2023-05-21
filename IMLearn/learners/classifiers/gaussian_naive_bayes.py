@@ -53,7 +53,7 @@ class GaussianNaiveBayes(BaseEstimator):
         # According to the MLE cov defined in Q3 A
         # DDOF = 1 because each variance has a single mu, unlike LDA where each (and only) variance, has
         #        k mus
-        self.var_ = np.array([np.var(X[y == clazz], axis=0, ddof=1) for clazz in self.classes_])
+        self.vars_ = np.array([np.var(X[y == clazz], axis=0, ddof=1) for clazz in self.classes_])
 
         return self
 
@@ -98,9 +98,9 @@ class GaussianNaiveBayes(BaseEstimator):
         # For each sample, calculate its pdf with each class' parameters (Mu & Cov)
         for i in range(len(X)):
             for k in range(len(self.classes_)):
-                cov = np.diag(self.var_[k])
+                cov = np.diag(self.vars_[k])
 
-                likelihoods[i, k] = np.power(2 * np.pi, -len(X[i]) * 0.5) * np.power(det(cov), -0.5) * \
+                likelihoods[i, k] = np.power(np.pi, -len(X[i]) * 0.5) * np.power(det(cov), -0.5) * \
                                     np.exp(-0.5 * (X[i] - self.mu_[k]).T @ inv(cov) @ (X[i] - self.mu_[k])) * \
                                     self.pi_[k]
 

@@ -132,7 +132,7 @@ def compare_gaussian_classifiers():
 
         # Add ellipses depicting the covariances of the fitted Gaussians
         for i in range(3):
-            fig.add_traces([get_ellipse(gnb.mu_[i], np.diag(gnb.var_[i])),
+            fig.add_traces([get_ellipse(gnb.mu_[i], np.diag(gnb.vars_[i])),
                             get_ellipse(lda.mu_[i], lda.cov_)],
                            rows=[1, 1], cols=[1, 2])
 
