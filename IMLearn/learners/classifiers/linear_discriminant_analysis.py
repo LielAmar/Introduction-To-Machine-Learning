@@ -107,7 +107,7 @@ class LDA(BaseEstimator):
         # For each sample, calculate its pdf with each class' parameters (Mu & Cov)
         for i in range(len(X)):
             for k in range(len(self.classes_)):
-                likelihoods[i, k] = np.power(np.pi, -len(X[i]) * 0.5) * np.power(det(self.cov_), -0.5) * \
+                likelihoods[i, k] = np.power(2 * np.pi, -len(X[i]) * 0.5) * np.power(det(self.cov_), -0.5) * \
                         np.exp(-0.5 * (X[i] - self.mu_[k]).T @ self._cov_inv @ (X[i] - self.mu_[k])) * \
                         self.pi_[k]
 

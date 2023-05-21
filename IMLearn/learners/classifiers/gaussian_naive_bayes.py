@@ -100,7 +100,7 @@ class GaussianNaiveBayes(BaseEstimator):
             for k in range(len(self.classes_)):
                 cov = np.diag(self.var_[k])
 
-                likelihoods[i, k] = np.power(np.pi, -len(X[i]) * 0.5) * np.power(det(cov), -0.5) * \
+                likelihoods[i, k] = np.power(2 * np.pi, -len(X[i]) * 0.5) * np.power(det(cov), -0.5) * \
                                     np.exp(-0.5 * (X[i] - self.mu_[k]).T @ inv(cov) @ (X[i] - self.mu_[k])) * \
                                     self.pi_[k]
 
