@@ -104,10 +104,6 @@ class GaussianNaiveBayes(BaseEstimator):
                                     np.exp(-0.5 * (X[i] - self.mu_[k]).T @ inv(cov) @ (X[i] - self.mu_[k])) * \
                                     self.pi_[k]
 
-                # print(np.exp(-0.5 * np.power((X[i] - self.mu_[k]) / (np.sqrt(self.var_[k])), 2)))
-                # likelihoods[i, k] = (np.exp(-0.5 * np.power((X[i] - self.mu_[k]) / (np.sqrt(self.var_[k])), 2))
-                #                      / np.sqrt(2 * np.pi * self.var_[k])) * self.pi_[k]
-
         return likelihoods
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
