@@ -1,4 +1,5 @@
-from IMLearn.learners.classifiers import Perceptron, LDA, GaussianNaiveBayes
+from IMLearn.learners.classifiers.linear_discriminant_analysis import LDA
+from IMLearn.learners.classifiers import Perceptron, GaussianNaiveBayes
 from typing import Tuple
 from utils import *
 import plotly.graph_objects as go
