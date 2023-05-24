@@ -3,6 +3,7 @@ from typing import Tuple, NoReturn
 from ...base import BaseEstimator
 import numpy as np
 from itertools import product
+from ...metrics import misclassification_error
 
 
 class DecisionStump(BaseEstimator):
@@ -43,7 +44,7 @@ class DecisionStump(BaseEstimator):
 
         error = None
 
-        # Find the best threshold for every feature, with signs 1 and -1
+        # Find the best threshold out of (every feature, with signs 1 and -1)
         for j, sign in product(range(X.shape[1]), [-1, 1]):
             thr, thr_err = self._find_threshold(X[:, j], y, sign)
 
@@ -77,9 +78,9 @@ class DecisionStump(BaseEstimator):
         to or above the threshold are predicted as `sign`
         """
 
-        feature = X[:, self.j_]
+        feature_column = X[:, self.j_]
 
-        return np.where(feature < self.threshold_, -self.sign_, self.sign_)
+        return np.where(feature_column < self.threshold_, -self.sign_, self.sign_)
 
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> Tuple[float, float]:
         """
@@ -119,30 +120,23 @@ class DecisionStump(BaseEstimator):
         values, labels = values[index], labels[index]
 
         # Loop over every entry in values (each being treated as a possible threshold) and calculate its loss
-        loss = np.zeros(shape=(m+1,))
+        thr_index, thr_loss = None, None
 
-        for i in range(0, m+1):
+        for index in range(0, m+1):
             # Count the number of elements from 0 to i that we were correct on classifying with -sign,
             # and the number of elements from i+1 to m that we were correct on classifying with sign.
-            pre = labels[0:i]
-            post = labels[i:m]
-            loss[i] = m - (np.size(pre[pre == -sign]) + np.size(post[post == sign]))
+            pre, post = labels[0:index], labels[index:m]
+            curr_loss = m - (np.size(pre[pre == -sign]) + np.size(post[post == sign]))
 
-        # Find the index with the lowest loss, use values[index] as the threshold and calculate the threshold error
-        thr_index = np.argmin(loss)
-
-        pre = labels[0:thr_index]
-        post = labels[thr_index:m]
-
-        thr_err = (m - (np.size(pre[pre == -sign]) + np.size(post[post == sign]))) / m
+            if thr_loss is None or curr_loss < thr_loss:
+                thr_loss, thr_index = curr_loss, index
 
         # If we had the minimal loss at index m, it means that we want to classify all rows with -sign
         if thr_index == m:
-            return np.inf, thr_err
+            return np.inf, (thr_loss / m)
 
         # Otherwise, simply return the value at best_index
-        return values[thr_index], thr_err
-
+        return values[thr_index], (thr_loss / m)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -161,4 +155,5 @@ class DecisionStump(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+
+        return misclassification_error(y, self.predict(X))
