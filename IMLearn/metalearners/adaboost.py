@@ -62,8 +62,8 @@ class AdaBoost(BaseEstimator):
             self.models_[i] = self.wl_().fit(X, y * self.D_)
 
             # Calculate the learner's prediction & misclassification error
-            y_hat = self.models_[i].fit(X)
-            epsilon = misclassification_error(y, y_hat)
+            y_hat = self.models_[i].predict(X)
+            epsilon = np.sum((y != y_hat) * self.D_)
 
             # Calculate the weight of the learner
             self.weights_[i] = 0.5 * np.log((1 / epsilon) - 1)
