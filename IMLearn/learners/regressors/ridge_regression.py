@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import NoReturn
 from ...base import BaseEstimator
 import numpy as np
-
+from IMLearn.metrics.loss_functions import mean_square_error
 
 class RidgeRegression(BaseEstimator):
     """
@@ -38,6 +38,7 @@ class RidgeRegression(BaseEstimator):
         Initialize a ridge regression model
         :param lam: scalar value of regularization parameter
         """
+
         super().__init__()
         self.coefs_ = None
         self.include_intercept_ = include_intercept
@@ -59,7 +60,23 @@ class RidgeRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        raise NotImplementedError()
+
+        I = np.eye(X.shape[1] + int(self.include_intercept_))
+        if self.include_intercept_:
+            X = np.c_[np.ones(len(X)), X]
+            I[0, 0] = 0
+
+        avg_xt = X.T / len(X)
+        self.coefs_ = np.linalg.solve(avg_xt @ X + (self.lam_ + 1e-12) * I, avg_xt @ y)
+
+        # TODO: why is this not working
+        # if self.include_intercept_:
+        #     X = np.c_[np.ones(len(X)), X]
+        #
+        # U, s, V = np.linalg.svd(X, full_matrices=False)
+        # s = s / (np.power(s, 2) + self.lam_)
+        #
+        # self.coefs_ = (U @ np.diag(s) @ V.T).T @ y
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -75,7 +92,11 @@ class RidgeRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+
+        if self.include_intercept_:
+            X = np.c_[np.ones(len(X)), X]
+
+        return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -94,4 +115,5 @@ class RidgeRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        raise NotImplementedError()
+
+        return mean_square_error(y, self.predict(X))
