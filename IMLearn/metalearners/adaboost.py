@@ -1,5 +1,5 @@
 import numpy as np
-from ...base import BaseEstimator
+from ..base import BaseEstimator
 from typing import Callable, NoReturn
 from ..metrics import misclassification_error
 
@@ -59,14 +59,14 @@ class AdaBoost(BaseEstimator):
         # Execute T iterations of AdaBoost exactly as described in Recitation #8
         for i in range(self.iterations_):
             # Create a new base learner
-            self.models_[i] = self.wl_().fit(X, y * self.D_)
+            self.models_.append(self.wl_().fit(X, y * self.D_))
 
             # Calculate the learner's prediction & misclassification error
             y_hat = self.models_[i].predict(X)
             epsilon = np.sum((y != y_hat) * self.D_)
 
             # Calculate the weight of the learner
-            self.weights_[i] = 0.5 * np.log((1 / epsilon) - 1)
+            self.weights_.append(0.5 * np.log((1 / epsilon) - 1))
 
             # Update weights for next iteration
             self.D_ = self.D_ * np.exp(-y * self.weights_[i] * y_hat)
@@ -126,8 +126,6 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-
-        T = np.min(T, len(self.models_))
 
         # Calculating the sum of the response of each estimator over every sample, and then returning the sign
         # as our response

@@ -113,30 +113,43 @@ class DecisionStump(BaseEstimator):
         which equal to or above the threshold are predicted as `sign`
         """
 
-        m = len(values)
+        ids = np.argsort(values)
+        values, labels = values[ids], labels[ids]
 
-        # Sort values & labels by the feature value
-        index = np.argsort(values)
-        values, labels = values[index], labels[index]
+        # Loss for classifying all as `sign` - namely, if threshold is smaller than values[0]
+        loss = np.sum(np.abs(labels)[np.sign(labels) == sign])
 
-        # Loop over every entry in values (each being treated as a possible threshold) and calculate its loss
-        thr_index, thr_loss = None, None
+        # Loss of classifying threshold being each of the values given
+        loss = np.append(loss, loss - np.cumsum(labels * sign))
 
-        for index in range(0, m+1):
-            # Count the number of elements from 0 to i that we were correct on classifying with -sign,
-            # and the number of elements from i+1 to m that we were correct on classifying with sign.
-            pre, post = labels[0:index], labels[index:m]
-            curr_loss = m - (np.size(pre[pre == -sign]) + np.size(post[post == sign]))
+        id = np.argmin(loss)
+        return np.concatenate([[-np.inf], values[1:], [np.inf]])[id], loss[id]
 
-            if thr_loss is None or curr_loss < thr_loss:
-                thr_loss, thr_index = curr_loss, index
-
-        # If we had the minimal loss at index m, it means that we want to classify all rows with -sign
-        if thr_index == m:
-            return np.inf, (thr_loss / m)
-
-        # Otherwise, simply return the value at best_index
-        return values[thr_index], (thr_loss / m)
+        # m = len(values)
+        #
+        # # Sort values & labels by the feature value
+        # index = np.argsort(values)
+        # values, labels = values[index], labels[index]
+        #
+        # # Loop over every entry in values (each being treated as a possible threshold) and calculate its loss
+        # thr_index, thr_loss = None, None
+        #
+        # for index in range(0, m+1):
+        #     # Count the number of elements from 0 to i that we were correct on classifying with -sign,
+        #     # and the number of elements from i+1 to m that we were correct on classifying with sign.
+        #     pre, post = labels[0:index], labels[index:m]
+        #     # TODO: take weight into account when calculating loss
+        #     curr_loss = m - (np.size(pre[pre == -sign]) + np.size(post[post == sign]))
+        #
+        #     if thr_loss is None or curr_loss < thr_loss:
+        #         thr_loss, thr_index = curr_loss, index
+        #
+        # # If we had the minimal loss at index m, it means that we want to classify all rows with -sign
+        # if thr_index == m:
+        #     return np.inf, (thr_loss / m)
+        #
+        # # Otherwise, simply return the value at best_index
+        # return values[thr_index], (thr_loss / m)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
