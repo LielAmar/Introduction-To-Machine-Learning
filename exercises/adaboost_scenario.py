@@ -42,6 +42,11 @@ def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
 def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=500):
     (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
 
+    # In order to use train_y and test_y for colors and symbols, they must be of type int
+    train_y = train_y.astype(int)
+    test_y = test_y.astype(int)
+
+
     # Question 1: Train- and test errors of AdaBoost in noiseless case
     adaboost = AdaBoost(DecisionStump, n_learners)
     adaboost.fit(train_X, train_y)
@@ -82,9 +87,6 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
                         subplot_titles=[f"AdaBoost decision boundary for {t} iterations" for t in T],
                         horizontal_spacing=0.05, vertical_spacing=.03)
 
-    # In order to use test_y for colors and symbols, it must be of type int
-    test_y = test_y.astype(int)
-
     for i, t in enumerate(T):
         fig.add_traces(create_decision_boundaries_traces_for_t(t), rows=1, cols=i + 1)
 
@@ -114,9 +116,9 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
     fig.add_traces([decision_surface(adaboost.predict, lims[0], lims[1], showscale=False),
             go.Scatter(x=train_X[:, 0], y=train_X[:, 1], mode="markers", showlegend=False,
-                       marker=dict(color=train_y, symbol=class_symbols[test_y],
+                       marker=dict(color=train_y, symbol=class_symbols[train_y],
                                    colorscale=[custom[0], custom[-1]],
-                                   size=adaboost.D_/np.max(adaboost.D_) * 5 * 4,
+                                   size=adaboost.D_/np.max(adaboost.D_) * 5 * 3,
                                    line=dict(color="black", width=1)))])
 
     fig.update_layout(width=500, height=500)
