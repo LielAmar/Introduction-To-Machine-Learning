@@ -63,9 +63,18 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         .update_xaxes(title_text="Number of fitted learners used to evaluate") \
         .update_yaxes(title_text="Loss")
 
-    fig.write_image("ex4_graphs/train_test_errors.png")
+    fig.write_image(f"ex4_graphs/train_test_errors_noise_{noise}.png")
 
     # Question 2: Plotting decision surfaces
+
+    # A helper function to prevent code dupes when creating a graph representing decision boundaries
+    def create_decision_boundaries_traces_for_t(t):
+        return [decision_surface(lambda xs: adaboost.partial_predict(xs, t), lims[0], lims[1], showscale=False),
+                go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers", showlegend=False,
+                           marker=dict(color=test_y, symbol=class_symbols[test_y],
+                                       colorscale=[custom[0], custom[-1]], size=4,
+                                       line=dict(color="black", width=1)))]
+
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
 
@@ -77,44 +86,45 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     test_y = test_y.astype(int)
 
     for i, t in enumerate(T):
-        fig.add_traces([decision_surface(lambda xs: adaboost.partial_predict(xs, t), lims[0], lims[1], showscale=False),
-                        go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers", showlegend=False,
-                                   marker=dict(color=test_y, symbol=class_symbols[test_y],
-                                               colorscale=[custom[0], custom[-1]], size=4,
-                                               line=dict(color="black", width=1)))
-                        ], rows=1, cols=i + 1)
+        fig.add_traces(create_decision_boundaries_traces_for_t(t), rows=1, cols=i + 1)
 
     fig.update_layout(width=2000, height=500)
 
-    fig.write_image("ex4_graphs/decision_boundaries.png")
+    fig.write_image(f"ex4_graphs/decision_boundaries_noise_{noise}.png")
 
     # Question 3: Decision surface of best performing ensemble
     best_index = np.argmin(test_error)
+    best_t = best_index + 1
     accuracy = 1 - test_error[best_index]
 
-    fig = go.Figure(
-        layout=go.Layout(title=f"Decision surface of the best performing ensemble<br>"
-                               f"size: {best_index + 1}, accuracy: {accuracy}",
-                         margin=dict(t=100)))
+    fig = go.Figure(layout=go.Layout(title=f"Decision surface of the best performing ensemble<br>"
+                                           f"size: {best_t}, accuracy: {accuracy}",
+                                     margin=dict(t=100)))
 
-    fig.add_traces([
-        decision_surface(lambda xs: adaboost.partial_predict(xs, best_index + 1), lims[0], lims[1], showscale=False),
-        go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers", showlegend=False,
-                   marker=dict(color=test_y, symbol=class_symbols[test_y],
-                               colorscale=[custom[0], custom[-1]], size=4,
-                               line=dict(color="black", width=1)))
-    ])
+    fig.add_traces(create_decision_boundaries_traces_for_t(best_t))
 
     fig.update_layout(width=500, height=500)
 
-    fig.write_image("ex4_graphs/best_ensemble_size.png")
-
-    raise NotImplementedError()
+    fig.write_image(f"ex4_graphs/best_ensemble_size_noise_{noise}.png")
 
     # Question 4: Decision surface with weighted samples
-    raise NotImplementedError()
+    fig = go.Figure(layout=go.Layout(title=f"Prediction on training data with {n_learners} iterations<br>"
+                                           f"with size as function of weight in D_",
+                                     margin=dict(t=100)))
+
+    fig.add_traces([decision_surface(adaboost.predict, lims[0], lims[1], showscale=False),
+            go.Scatter(x=train_X[:, 0], y=train_X[:, 1], mode="markers", showlegend=False,
+                       marker=dict(color=train_y, symbol=class_symbols[test_y],
+                                   colorscale=[custom[0], custom[-1]],
+                                   size=adaboost.D_/np.max(adaboost.D_) * 5 * 4,
+                                   line=dict(color="black", width=1)))])
+
+    fig.update_layout(width=500, height=500)
+
+    fig.write_image(f"ex4_graphs/last_iteration_training_set_noise_{noise}.png")
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     fit_and_evaluate_adaboost(0)
+    fit_and_evaluate_adaboost(0.4)
