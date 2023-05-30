@@ -113,43 +113,46 @@ class DecisionStump(BaseEstimator):
         which equal to or above the threshold are predicted as `sign`
         """
 
-        ids = np.argsort(values)
-        values, labels = values[ids], labels[ids]
+        # Sorting the values and labels according to the values in an increasing order
+        sorted_indexes = np.argsort(values)
+        values, labels = values[sorted_indexes], labels[sorted_indexes]
 
-        # Loss for classifying all as `sign` - namely, if threshold is smaller than values[0]
-        loss = np.sum(np.abs(labels)[np.sign(labels) == sign])
+        # Calculating the possible thresholds following this principle:
+        #   - First threshold will be -infinity  =>  all elements will be classified as +sign
+        #   - For all i in [1, len(values)-1], the i'th threshold will be the i'th value,
+        #     meaning every element lesser than the i'th threshold will be classified as -sign
+        #   - Last threshold will be +infinity  =>  all elements will be classified as -sign
+        thresholds = np.concatenate([[-np.inf], values[1:], [np.inf]])
 
-        # Loss of classifying threshold being each of the values given
-        loss = np.append(loss, loss - np.cumsum(labels * sign))
+        # Calculate the number of values that we correctly classified if we took the threshold to be -infinity,
+        # taking the values' weights into account (for later usage in AdaBoost)
+        correct_min_threshold = np.sum(np.abs(labels * (np.sign(labels) == sign)))
 
-        id = np.argmin(loss)
-        return np.concatenate([[-np.inf], values[1:], [np.inf]])[id], loss[id]
+        # After we got the correctness for threshold being -infinity, we use #np.cumsum to calculate
+        # the number of (weighted) elements that were changed in a good/bad way after moving the threshold.
+        # This being: From all the (weighted) elements we classified correctly, reduce, for each index in the
+        # #np.cumsum result, the number of (weighted) elements that are now classified correctly.
+        3
+        # If we ended up changing more (weighted) elements to the wrong sign, we will reduce a negative value, meaning
+        # this is a bad index to take for a threshold (since we want the minimal).
+        # The more (weighted) elements we got correctly, the higher the cumsum number is, the smaller value we'll have
+        # => the better the threshold is.
+        incorrect_per_threshold = np.append(correct_min_threshold,
+                                            correct_min_threshold - np.cumsum(labels * sign))
 
-        # m = len(values)
-        #
-        # # Sort values & labels by the feature value
-        # index = np.argsort(values)
-        # values, labels = values[index], labels[index]
-        #
-        # # Loop over every entry in values (each being treated as a possible threshold) and calculate its loss
-        # thr_index, thr_loss = None, None
-        #
-        # for index in range(0, m+1):
-        #     # Count the number of elements from 0 to i that we were correct on classifying with -sign,
-        #     # and the number of elements from i+1 to m that we were correct on classifying with sign.
-        #     pre, post = labels[0:index], labels[index:m]
-        #     # TODO: take weight into account when calculating loss
-        #     curr_loss = m - (np.size(pre[pre == -sign]) + np.size(post[post == sign]))
-        #
-        #     if thr_loss is None or curr_loss < thr_loss:
-        #         thr_loss, thr_index = curr_loss, index
-        #
-        # # If we had the minimal loss at index m, it means that we want to classify all rows with -sign
-        # if thr_index == m:
-        #     return np.inf, (thr_loss / m)
-        #
-        # # Otherwise, simply return the value at best_index
-        # return values[thr_index], (thr_loss / m)
+        # Taking the index of the element with the minimal value would result in taking the threshold that
+        # reduced the most (weighted) correct elements to the base threshold (-infinity)
+        #   If the index is 0, it means that we classified correctly the most (weighted) elements when
+        #   we classified all of them as +sign
+        #   If the index is len(values), it means that we classified correctly the most (weighted) elements
+        #   when we classified all of them as -sign
+        best_threshold_index = np.argmin(incorrect_per_threshold)
+
+        # Returning the threshold value at the best index, and it's error value
+        best_threshold = thresholds[best_threshold_index]
+        incorrect_values = incorrect_per_threshold[best_threshold_index]
+
+        return best_threshold, incorrect_values
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
