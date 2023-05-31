@@ -62,7 +62,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
     # Question 7 - Perform CV for different values of the regularization parameter for Ridge and Lasso regressions
     # lambdas = np.linspace(0.001, 2, n_evaluations)
-    ridge_lambdas, lasso_lambdas = np.linspace(0.00001, 0.01, num=n_evaluations), np.linspace(.001, 1, num=n_evaluations)
+    ridge_lambdas, lasso_lambdas = np.linspace(0.00001, 1, num=n_evaluations), np.linspace(.001, 1, num=n_evaluations)
     ridge_error, lasso_error = np.zeros(shape=(n_evaluations, 2)), np.zeros(shape=(n_evaluations, 2))
 
     for i, lam in enumerate(ridge_lambdas):
