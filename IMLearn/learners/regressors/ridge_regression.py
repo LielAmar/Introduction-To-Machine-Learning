@@ -74,7 +74,6 @@ class RidgeRegression(BaseEstimator):
 
         # Calculating the coefficients according to the following formula:
         # (X.T @ X  +  lambda * I) @ X.T @ y
-        # In order to get an unbiased estimator, we'd like to divide by m whenever we use X.T
         self.coefs_ = np.linalg.inv((X.T @ X + (self.lam_ * I))) @ X.T @ y
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
