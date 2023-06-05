@@ -61,20 +61,19 @@ class RidgeRegression(BaseEstimator):
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
 
-        # Calculating the Identity matrix of the correct size.
-        # Notice that if we have an interception point, we add a column to X
-        # Therefore, the identity matrix must be of size (d+1)x(d+1) in that case
-        I = np.identity(len(X[0]) + int(self.include_intercept_))
-
-        # Add a column of ones to X, and change [0,0] in the Identity matrix to 0, because
-        # we don't want any relation between the intercept and lambda
         if self.include_intercept_:
             X = np.c_[np.ones(len(X)), X]
-            I[0, 0] = 0
 
-        # Calculating the coefficients according to the following formula:
-        # (X.T @ X  +  lambda * I) @ X.T @ y
-        self.coefs_ = np.linalg.inv((X.T @ X + (self.lam_ * I))) @ X.T @ y
+        # Grav the SVD of X
+        U, s, Vh = np.linalg.svd(X, full_matrices=False, compute_uv=True)
+        V = Vh.T
+
+        # Update the singular values to be (sigma/(sigma^2 + lambda))
+        s = s / (np.power(s, 2) + self.lam_)
+
+        # Calculate the coefficients according to this formula:
+        # W^ridge = (V @ SIGMA @ U^T) @ y
+        self.coefs_ = (V @ np.diag(s) @ U.T) @ y
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
