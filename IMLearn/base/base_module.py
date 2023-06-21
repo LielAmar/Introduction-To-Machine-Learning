@@ -22,6 +22,7 @@ class BaseModule(ABC):
         weights: np.ndarray, default None
             Initial value of weights
         """
+
         self.weights_ = weights
 
     def compute_output(self, **kwargs) -> np.ndarray:

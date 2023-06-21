@@ -39,6 +39,7 @@ class GradientDescent:
         Callable function receives as input any argument relevant for the current GD iteration. Arguments
         are specified in the `GradientDescent.fit` function
     """
+
     def __init__(self,
                  learning_rate: BaseLR = FixedLR(1e-3),
                  tol: float = 1e-5,
@@ -68,9 +69,12 @@ class GradientDescent:
             Callable function receives as input any argument relevant for the current GD iteration. Arguments
             are specified in the `GradientDescent.fit` function
         """
+
         self.learning_rate_ = learning_rate
+
         if out_type not in OUTPUT_VECTOR_TYPE:
             raise ValueError("output_type not supported")
+
         self.out_type_ = out_type
         self.tol_ = tol
         self.max_iter_ = max_iter
@@ -119,4 +123,42 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        raise NotImplementedError()
+
+        best_weight = None
+        best_val = None
+        last_weight = None
+        mean_weight = None
+        iterations = 0
+
+        weight = f.weights
+
+        for t in range(self.max_iter_):
+            val = f.compute_output(X=X, y=y)
+            grad = f.compute_jacobian(X=X, y=y)
+
+            eta = self.learning_rate_.lr_step(t=t)
+            delta = np.linalg.norm((np.power(weight, t) - np.power(weight, t-1)) ,ord=2)
+
+            self.callback_(solver=self, weights=weight, val=val, grad=grad, t=t, eta=eta, delta=delta)
+
+            last_weight = weight
+            mean_weight = weight if mean_weight is None else (mean_weight + weight)
+            best_weight = weight if best_weight is None else (weight if best_val < val else best_weight)
+            best_val = val if best_val is None else (val if best_val < val else best_val)
+
+            iterations = iterations + 1
+
+            # If the delta (change between weight vectors) is less than tol, break the loop
+            if delta < self.tol_:
+                break
+
+            weight = weight - eta * grad
+
+
+        # Return the correct weight according to out type
+        if self.out_type_ == "last":
+            return last_weight
+        elif self.out_type_ == "best":
+            return best_weight
+        else:
+            return mean_weight / iterations

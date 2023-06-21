@@ -8,6 +8,7 @@ class L2(BaseModule):
 
     Represents the function: f(w)=||w||^2_2
     """
+
     def __init__(self, weights: np.ndarray = None):
         """
         Initialize a module instance
@@ -17,6 +18,7 @@ class L2(BaseModule):
         weights: np.ndarray, default=None
             Initial value of weights
         """
+
         super().__init__(weights)
 
     def compute_output(self, **kwargs) -> np.ndarray:
@@ -33,7 +35,8 @@ class L2(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        raise NotImplementedError()
+
+        return np.power(np.linalg.norm(self.weights, ord=2), 2)
 
     def compute_jacobian(self, **kwargs) -> np.ndarray:
         """
@@ -49,7 +52,8 @@ class L2(BaseModule):
         output: ndarray of shape (n_in,)
             L2 derivative with respect to self.weights at point self.weights
         """
-        raise NotImplementedError()
+
+        return 2 * self.weights
 
 
 class L1(BaseModule):
@@ -62,6 +66,7 @@ class L1(BaseModule):
         weights: np.ndarray, default=None
             Initial value of weights
         """
+
         super().__init__(weights)
 
     def compute_output(self, **kwargs) -> np.ndarray:
@@ -78,7 +83,8 @@ class L1(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        raise NotImplementedError()
+
+        return np.linalg.norm(self.weights, ord=1)
 
     def compute_jacobian(self, **kwargs) -> np.ndarray:
         """
@@ -94,8 +100,8 @@ class L1(BaseModule):
         output: ndarray of shape (n_in,)
             L1 derivative with respect to self.weights at point self.weights
         """
-        raise NotImplementedError()
 
+        return np.sign(self.weights)
 
 class LogisticModule(BaseModule):
     """
