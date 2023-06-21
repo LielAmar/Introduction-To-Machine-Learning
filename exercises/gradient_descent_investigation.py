@@ -73,12 +73,49 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
     weights: List[np.ndarray]
         Recorded parameters
     """
-    raise NotImplementedError()
+
+    recorded_values = []
+    recorded_weights = []
+
+    def gd_callback(solver, weights, val, grad, t, eta, delta):
+        recorded_values.append(val)
+        recorded_weights.append(weights)
+
+    return gd_callback, recorded_values, recorded_weights
 
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
-    raise NotImplementedError()
+
+    empty = np.empty(shape=(0,))
+
+    for eta in etas:
+        for module, name in [(L1, "L1"), (L2, "L2")]:
+            gd_callback, values, weights = get_gd_state_recorder_callback()
+
+            gd = GradientDescent(learning_rate=FixedLR(eta), callback=gd_callback)
+            gd.fit(module(weights=init), X=empty, y=empty)
+
+            # Question 1: Plot the descent path
+            fig = plot_descent_path(module=module,
+                                    descent_path=np.array(weights),
+                                    title=f"of an {name} module with fixed learning rate η={eta}")
+            fig.write_image(f"./ex5_graphs/{name}_{eta}_descent.png")
+
+            # Question 3: Plot the convergence rate
+            fig = go.Figure([go.Scatter(y=values, mode="markers")],
+                            layout=go.Layout(title=f"Convergence Rate of an {name} module with " 
+                                                   f"fixed learning rate η={eta}"))
+
+            fig.update_layout(width=650, height=500) \
+                .update_xaxes(title_text="Iteration") \
+                .update_yaxes(title_text=f"Convergence (w {name} norm)")
+
+            fig.write_image(f"./ex5_graphs/{name}_{eta}_convergence.png")
+
+            # Question 4: Lowest loss achieved
+            print(f"The lowest loss achieved by an {name} module with a fixed learning rate η={eta} "
+                  f"is {np.round(np.min(values), 3)}")
 
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
@@ -141,5 +178,5 @@ def fit_logistic_regression():
 if __name__ == '__main__':
     np.random.seed(0)
     compare_fixed_learning_rates()
-    compare_exponential_decay_rates()
-    fit_logistic_regression()
+    # compare_exponential_decay_rates()
+    # fit_logistic_regression()

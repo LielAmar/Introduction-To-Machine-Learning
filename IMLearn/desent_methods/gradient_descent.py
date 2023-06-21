@@ -124,38 +124,45 @@ class GradientDescent:
 
         """
 
-        best_weight = None
-        best_val = None
-        last_weight = None
-        mean_weight = None
+        # Initiating first weights vector
+        best_weight, best_val = f.weights, f.compute_output(X=X, y=y)
+        last_weight = f.weights
+        mean_weight = f.weights
         iterations = 0
 
-        weight = f.weights
+        weight_t = f.weights
 
         for t in range(self.max_iter_):
-            val = f.compute_output(X=X, y=y)
+            # Calculate the gradient and eta to be used to update current weight
             grad = f.compute_jacobian(X=X, y=y)
-
             eta = self.learning_rate_.lr_step(t=t)
-            delta = np.linalg.norm((np.power(weight, t) - np.power(weight, t-1)) ,ord=2)
 
-            self.callback_(solver=self, weights=weight, val=val, grad=grad, t=t, eta=eta, delta=delta)
+            # Update current weights vector
+            f.weights = weight_t - eta * grad
 
-            last_weight = weight
-            mean_weight = weight if mean_weight is None else (mean_weight + weight)
-            best_weight = weight if best_weight is None else (weight if best_val < val else best_weight)
+            # Calculate the performance and delta of the new weights vector
+            val = f.compute_output(X=X, y=y)
+            delta = np.linalg.norm(f.weights - weight_t, ord=2)
+
+            # Call the callback function
+            self.callback_(solver=self, weights=f.weights, val=val, grad=grad, t=t, eta=eta, delta=delta)
+
+            # Update the last weights vector, mean weights vector and best weights vector
+            last_weight = f.weights
+            mean_weight = f.weights if mean_weight is None else (mean_weight + f.weights)
+            best_weight = f.weights if best_weight is None else (f.weights if best_val < val else best_weight)
             best_val = val if best_val is None else (val if best_val < val else best_val)
 
             iterations = iterations + 1
+
+            # Update the weight_t to be the weights vector calculated at this iteration
+            weight_t = f.weights
 
             # If the delta (change between weight vectors) is less than tol, break the loop
             if delta < self.tol_:
                 break
 
-            weight = weight - eta * grad
-
-
-        # Return the correct weight according to out type
+        # Return the correct weights vector according to out type
         if self.out_type_ == "last":
             return last_weight
         elif self.out_type_ == "best":
