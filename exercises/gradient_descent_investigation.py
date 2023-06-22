@@ -230,8 +230,6 @@ def fit_logistic_regression():
 
             validation_scores.append(validation_score)
 
-            # print(f"Train score:", np.round(train_score, 3), "Test score:", np.round(validation_score, 3), f"(λ={lam})")
-
         best_lambda = lambdas[np.argmin(validation_scores)]
 
         lr_model = LogisticRegression(solver=gd, penalty=penalty, lam=best_lambda)
