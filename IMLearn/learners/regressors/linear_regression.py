@@ -57,7 +57,6 @@ class LinearRegression(BaseEstimator):
         # If we have an intercept, we want to add a 0th feature which is a column of ones
         if self.include_intercept_:
             X = np.c_[np.ones(len(X)), X]
-            # X = np.insert(X, 0, np.ones(len(X)), axis=1)
 
         # Computes the Moore-Penrose Pseudo-inverse of X and calculate w
         self.coefs_ = pinv(X) @ y
